@@ -1,9 +1,25 @@
 import ast
 import inspect
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 from collections.abc import Callable
 from dataclasses import MISSING, Field, dataclass, fields
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, TypeAliasType, get_args, get_origin
+
+
+def make_literal_parser[T](literal) -> Callable[[str], T]:
+    args = get_args(literal)
+    for arg in args:
+        if not isinstance(arg, str):
+            raise TypeError(
+                "Literal annotations only support `str`.  Use a custom parser for other types"
+            )
+
+    def literal_parser(input: str) -> T:
+        if input not in args:
+            raise ArgumentTypeError(f"expected one of {args}, got {input}")
+        return input
+
+    return literal_parser
 
 
 @dataclass(slots=True)
@@ -26,14 +42,20 @@ class CliParam[T]:
     def short(self) -> str:
         return self.get_meta("short")
 
+    def type(self) -> type:
+        return self.field.type
+
     def help(self) -> str:
         return self.get_meta("help") or self.docstring
 
     def parser[T](self) -> Optional[Callable[[str], T]]:
-        return self.get_meta("parser")
+        if self.get_meta("parser"):
+            return self.get_meta("parser")
 
-    def type(self) -> type:
-        return self.field.type
+        if get_origin(self.type()) is Literal:
+            return make_literal_parser(self.type())
+
+        return None
 
     def flags(self) -> list[str]:
         if self.positional():
