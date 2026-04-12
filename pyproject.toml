@@ -1,7 +1,7 @@
 [project]
-name = "cli"
+name = "cliclass"
 description = "A library for generating CLI interfaces from dataclasses"
-version = "0.1.0"
+version = "0.1.0a0"
 authors = [
 	{name = "Andrej Kolčin", email = "self@kaathewise.net"}
 ]

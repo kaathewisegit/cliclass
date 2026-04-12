@@ -4,7 +4,7 @@ from typing import Literal
 
 import pytest
 
-from cli import CliCommand
+from cliclass import CliCommand
 
 
 @dataclass(kw_only=True)

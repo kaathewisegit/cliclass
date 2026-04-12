@@ -2,7 +2,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 
-from cli import CliCommand
+from cliclass import CliCommand
 
 
 def exec(cmd: str, **kwargs):
