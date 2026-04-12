@@ -1,13 +1,21 @@
 [project]
 name = "cli"
+description = "A library for generating CLI interfaces from dataclasses"
 version = "0.1.0"
+authors = [
+	{name = "Andrej Kolčin", email = "self@kaathewise.net"}
+]
+license = "MPL-2.0"
 requires-python = ">=3.14"
-dependencies = [
-    "pytest[dev]>=9.0.3",
+classifiers = [
+	"Development Status :: 2 - Pre-Alpha",
+
+	"Environment :: Console",
 ]
 
 [project.optional-dependencies]
 dev = [
+    	"pytest~=9.0.3",
 	"ty~=0.0.29",
 	"ruff~=0.15.8",
 ]
