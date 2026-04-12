@@ -6,7 +6,7 @@ from dataclasses import MISSING, Field, dataclass, fields
 from typing import Any, Literal, Optional, TypeAliasType, get_args, get_origin
 
 
-def make_literal_parser[T](literal) -> Callable[[str], T]:
+def make_literal_parser(literal) -> Callable[[str], str]:
     args = get_args(literal)
     for arg in args:
         if not isinstance(arg, str):
@@ -14,7 +14,7 @@ def make_literal_parser[T](literal) -> Callable[[str], T]:
                 "Literal annotations only support `str`.  Use a custom parser for other types"
             )
 
-    def literal_parser(input: str) -> T:
+    def literal_parser(input: str) -> str:
         if input not in args:
             raise ArgumentTypeError(f"expected one of {args}, got {input}")
         return input
@@ -33,22 +33,22 @@ class CliParam[T]:
     def positional(self) -> bool:
         return not self.field.kw_only
 
-    def get_meta[T](self, key: str) -> Optional[T]:
+    def get_meta[U](self, key: str) -> Optional[U]:
         return self.field.metadata.get(key) if self.field.metadata else None
 
     def long(self) -> str:
         return self.get_meta("long") or self.field.name.replace("_", "-")
 
-    def short(self) -> str:
+    def short(self) -> Optional[str]:
         return self.get_meta("short")
 
-    def type(self) -> type:
+    def type(self):
         return self.field.type
 
-    def help(self) -> str:
+    def help(self) -> Optional[str]:
         return self.get_meta("help") or self.docstring
 
-    def parser[T](self) -> Optional[Callable[[str], T]]:
+    def parser[U](self) -> Optional[Callable[[str], U]]:
         if self.get_meta("parser"):
             return self.get_meta("parser")
 
