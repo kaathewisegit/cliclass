@@ -2,7 +2,7 @@ import inspect
 from argparse import ArgumentParser, ArgumentTypeError
 from collections.abc import Callable
 from dataclasses import MISSING, Field, dataclass, fields
-from typing import Any, Literal, Optional, Union, get_args, get_origin
+from typing import Any, Literal, Optional, Union, cast, get_args, get_origin
 
 from ._docstrings import get_all_item_docstrings
 
@@ -59,7 +59,7 @@ class CliParam[T]:
         if get_origin(self.type()) is Literal:
             return make_literal_parser(self.type())
 
-        return None
+        return self.type()
 
     def is_subcommand(self) -> bool:
         return self.get_meta("subcommand") or False
@@ -80,12 +80,22 @@ class CliParam[T]:
         else:
             return "store"
 
-    def required(self) -> bool:
+    def has_default(self) -> bool:
         return (
-            self.field.default is MISSING
-            and self.field.default_factory is MISSING
-            and not self.positional()
+            self.field.default is not MISSING
+            or self.field.default_factory is not MISSING
         )
+
+    def required(self) -> bool:
+        return not self.has_default() and not self.positional()
+
+    def get_default(self) -> T:
+        if self.field.default is not MISSING:
+            return self.field.default
+        elif self.field.default_factory is not MISSING:
+            return self.field.default_factory()
+        else:
+            raise Exception("TODO")
 
     def add_subcommands(self, parser: ArgumentParser):
         subparsers = parser.add_subparsers(dest=self.long())
@@ -96,7 +106,7 @@ class CliParam[T]:
         for type in sub_types:
             cmd = CliCommand(type)
             subparser = subparsers.add_parser(cmd.name(), help=cmd.help())
-            cmd.populate_parser(subparser)
+            cmd._populate_parser(subparser)
 
     def add_argument(self, parser: ArgumentParser):
         if self.is_subcommand():
@@ -107,6 +117,11 @@ class CliParam[T]:
 
         if self.required():
             kwargs["required"] = True
+
+        if self.has_default():
+            kwargs["default"] = self.get_default()
+            if self.positional():
+                kwargs["nargs"] = "?"
 
         if not self.positional():
             kwargs["action"] = self.action()
@@ -130,22 +145,22 @@ class CliCommand[T]:
     def help(self) -> Optional[str]:
         return inspect.getdoc(self.cls)
 
-    def parser_kwargs(self) -> dict:
+    def _parser_kwargs(self) -> dict:
         return {
             "prog": self.name(),
             "description": self.help(),
         }
 
-    def populate_parser(self, parser: ArgumentParser) -> None:
+    def _populate_parser(self, parser: ArgumentParser) -> None:
         docstrings = get_all_item_docstrings(self.cls)
 
         for field in fields(self.cls):
             param = CliParam(field, docstrings.get(field.name))
             param.add_argument(parser)
 
-    def make_parser(self) -> ArgumentParser:
-        parser = ArgumentParser(**self.parser_kwargs())
-        self.populate_parser(parser)
+    def _make_parser(self) -> ArgumentParser:
+        parser = ArgumentParser(**self._parser_kwargs())
+        self._populate_parser(parser)
         return parser
 
     def unflatten(self, flat_args: dict[str, Any]) -> T:
@@ -163,10 +178,11 @@ class CliCommand[T]:
 
                 chosen_cls = None
                 for t in sub_types:
-                    if t is not type(None) and t.__name__.lower() == selected_sub_name:
+                    if t is not type(None) and t.__name__.lower() == selected_sub_name:  # type: ignore
                         chosen_cls = t
                         break
 
+                chosen_cls = cast(type, chosen_cls)
                 if chosen_cls:
                     init_kwargs[f.name] = CliCommand(chosen_cls).unflatten(flat_args)
             else:
@@ -175,7 +191,7 @@ class CliCommand[T]:
 
         return self.cls(**init_kwargs)
 
-    def parse(self) -> T:
-        parser = self.make_parser()
-        args = parser.parse_args()
-        return self.unflatten(vars(args))
+    def parse(self, args: Optional[list[str]] = None) -> T:
+        parser = self._make_parser()
+        namespace = parser.parse_args(args)
+        return self.unflatten(vars(namespace))

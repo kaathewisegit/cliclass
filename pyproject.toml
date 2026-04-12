@@ -2,6 +2,9 @@
 name = "cli"
 version = "0.1.0"
 requires-python = ">=3.14"
+dependencies = [
+    "pytest[dev]>=9.0.3",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -12,3 +15,8 @@ dev = [
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "RUF"]
 ignore = ["E501", "F401"]
+
+[tool.pytest]
+testpaths = ["tests"]
+python_files = ["*.py"]
+strict_markers = true
