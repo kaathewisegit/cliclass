@@ -1,9 +1,11 @@
 import ast
 import inspect
+import textwrap
 
 
 def get_item_docstrings(cls, docstrings: dict[str, str]):
     source = inspect.getsource(cls)
+    source = textwrap.dedent(source)  # for classes nested in functions
     tree = ast.parse(source)
 
     class_def = tree.body[0]
