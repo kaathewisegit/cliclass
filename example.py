@@ -15,11 +15,29 @@ class Langopts(ABC):
 
 
 @dataclass(slots=True)
-class C(Langopts):
-    id: int = field(metadata={"nested": {"a": True}})
+class Run(Langopts):
+    "Run stuff"
+
+    id: int
     """docstring"""
 
     kind: Literal["a", "b"]
 
 
-print(CliCommand(C).parse())
+@dataclass(slots=True)
+class Build(Langopts):
+    "Build stuff"
+
+    stuff: str
+
+
+@dataclass(slots=True)
+class Cmd:
+    "Main command"
+
+    subcommand: Run | Build = field(metadata={"cli": {"subcommand": True}})
+
+    opt: bool = field(default=False, kw_only=True)
+
+
+print(CliCommand(Cmd).parse())
