@@ -98,7 +98,8 @@ class CliParam[T]:
             raise Exception("TODO")
 
     def add_subcommands(self, parser: ArgumentParser):
-        subparsers = parser.add_subparsers(dest=self.long())
+        # TODO: not required if one of the types is None
+        subparsers = parser.add_subparsers(dest=self.long(), required=True)
 
         type = self.type()
         sub_types = get_args(type) if get_origin(type) is Union else [type]

@@ -99,7 +99,7 @@ def test_type_coercion_timeout():
 
 def test_no_subcommand_provided():
     cli = CliCommand(AppCmd)
-    with pytest.raises(TypeError):
+    with pytest.raises(SystemExit):
         cli.parse([])
 
 
