@@ -98,6 +98,30 @@ class CliParam[T]:
         parser.add_argument(*self.flags(), **kwargs)
 
 
+@dataclass(slots=True)
+class CliCommand[T]:
+    cls: type[T]
+
+    def make_parser(self) -> ArgumentParser:
+        parser = ArgumentParser(
+            prog=self.cls.__name__,
+            description=inspect.getdoc(self.cls),
+        )
+
+        docstrings = get_all_item_docstrings(self.cls)
+
+        parameters = [CliParam(f, docstrings.get(f.name)) for f in fields(self.cls)]
+        for param in parameters:
+            param.add_argument(parser)
+
+        return parser
+
+    def parse(self) -> T:
+        parser = self.make_parser()
+        args = parser.parse_args()
+        return self.cls(**vars(args))
+
+
 def get_item_docstrings(cls, docstrings: dict[str, str]):
     source = inspect.getsource(cls)
     tree = ast.parse(source)
@@ -136,25 +160,3 @@ def get_all_item_docstrings(cls) -> dict[str, str]:
             continue
 
     return docstrings
-
-
-def get_fields(cls):
-    docstrings = get_all_item_docstrings(cls)
-
-    return [CliParam(f, docstrings.get(f.name)) for f in fields(cls)]
-
-
-def make_parser[T](cls: type[T]) -> ArgumentParser:
-    parser = ArgumentParser()
-
-    parameters = get_fields(cls)
-    for param in parameters:
-        param.add_argument(parser)
-
-    return parser
-
-
-def parse_into[T](cls: type[T]) -> T:
-    parser = make_parser(cls)
-    args = parser.parse_args()
-    return cls(**vars(args))

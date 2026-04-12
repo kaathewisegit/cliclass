@@ -2,7 +2,7 @@ from abc import ABC
 from dataclasses import dataclass, field
 from typing import Literal
 
-from cli import get_item_docstrings, parse_into
+from cli import CliCommand
 
 
 @dataclass(slots=True, kw_only=True)
@@ -22,4 +22,4 @@ class C(Langopts):
     kind: Literal["a", "b"]
 
 
-print(parse_into(C))
+print(CliCommand(C).parse())
