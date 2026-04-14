@@ -1,7 +1,7 @@
 import inspect
 from argparse import ArgumentParser, ArgumentTypeError
 from collections.abc import Callable
-from dataclasses import MISSING, Field, dataclass, fields
+from dataclasses import MISSING, Field, dataclass, fields, is_dataclass
 from typing import Any, Literal, Optional, Union, cast, get_args, get_origin
 
 from ._docstrings import get_all_item_docstrings
@@ -139,6 +139,12 @@ class CliParam[T]:
 @dataclass(slots=True)
 class CliCommand[T]:
     cls: type[T]
+
+    def __post_init__(self):
+        if not inspect.isclass(self.cls):
+            raise TypeError(f"object `{self.cls}` is not a type")
+        if not is_dataclass(self.cls):
+            raise TypeError(f"{self.cls.__name__} is not a dataclass")
 
     def name(self) -> str:
         return self.cls.__name__.lower()
